@@ -21,7 +21,7 @@ Setup and use Icarus Verilog
 [Link](https://youtu.be/YUB-OyGr1oA?si=Yy2i3m9ODQcTilgg)
 
 *Practice/Assignment*
-[Link](https://youtu.be/YUB-OyGr1oA?si=Yy2i3m9ODQcTilgg)
+[Link](https://hdlbits.01xz.net/wiki/Problem_sets)
 
 *Installing Vivado*
 [Link](https://www.youtube.com/watch?v=or3yYwGyGpA)
