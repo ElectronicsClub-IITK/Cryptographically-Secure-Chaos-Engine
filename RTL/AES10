@@ -1,1 +1,626 @@
+/ sbox.v
+// -----------------------------------------------------------------------
+// AES S-Box (SubBytes lookup table)
+// Splits the 8-bit input into two 4-bit nibbles:
+//    row = upper nibble (bits 7:4)
+//    col = lower nibble (bits 3:0)
+// and returns the value stored in the standard 16x16 AES S-box grid.
+// -----------------------------------------------------------------------
+ 
+module sbox (
+    input  wire [7:0] in_byte,
+    output reg  [7:0] out_byte
+);
+ 
+    wire [3:0] row = in_byte[7:4];
+    wire [3:0] col = in_byte[3:0];
+ 
+    // 16 x 16 grid, exactly like the AES S-box table
+    reg [7:0] sbox_grid [0:15][0:15];
+ 
+    integer i, j;
+    initial begin
+        // Row 0x0
+        sbox_grid[0][0]=8'h63; sbox_grid[0][1]=8'h7c; sbox_grid[0][2]=8'h77; sbox_grid[0][3]=8'h7b;
+        sbox_grid[0][4]=8'hf2; sbox_grid[0][5]=8'h6b; sbox_grid[0][6]=8'h6f; sbox_grid[0][7]=8'hc5;
+        sbox_grid[0][8]=8'h30; sbox_grid[0][9]=8'h01; sbox_grid[0][10]=8'h67; sbox_grid[0][11]=8'h2b;
+        sbox_grid[0][12]=8'hfe; sbox_grid[0][13]=8'hd7; sbox_grid[0][14]=8'hab; sbox_grid[0][15]=8'h76;
+        // Row 0x1
+        sbox_grid[1][0]=8'hca; sbox_grid[1][1]=8'h82; sbox_grid[1][2]=8'hc9; sbox_grid[1][3]=8'h7d;
+        sbox_grid[1][4]=8'hfa; sbox_grid[1][5]=8'h59; sbox_grid[1][6]=8'h47; sbox_grid[1][7]=8'hf0;
+        sbox_grid[1][8]=8'had; sbox_grid[1][9]=8'hd4; sbox_grid[1][10]=8'ha2; sbox_grid[1][11]=8'haf;
+        sbox_grid[1][12]=8'h9c; sbox_grid[1][13]=8'ha4; sbox_grid[1][14]=8'h72; sbox_grid[1][15]=8'hc0;
+        // Row 0x2
+        sbox_grid[2][0]=8'hb7; sbox_grid[2][1]=8'hfd; sbox_grid[2][2]=8'h93; sbox_grid[2][3]=8'h26;
+        sbox_grid[2][4]=8'h36; sbox_grid[2][5]=8'h3f; sbox_grid[2][6]=8'hf7; sbox_grid[2][7]=8'hcc;
+        sbox_grid[2][8]=8'h34; sbox_grid[2][9]=8'ha5; sbox_grid[2][10]=8'he5; sbox_grid[2][11]=8'hf1;
+        sbox_grid[2][12]=8'h71; sbox_grid[2][13]=8'hd8; sbox_grid[2][14]=8'h31; sbox_grid[2][15]=8'h15;
+        // Row 0x3
+        sbox_grid[3][0]=8'h04; sbox_grid[3][1]=8'hc7; sbox_grid[3][2]=8'h23; sbox_grid[3][3]=8'hc3;
+        sbox_grid[3][4]=8'h18; sbox_grid[3][5]=8'h96; sbox_grid[3][6]=8'h05; sbox_grid[3][7]=8'h9a;
+        sbox_grid[3][8]=8'h07; sbox_grid[3][9]=8'h12; sbox_grid[3][10]=8'h80; sbox_grid[3][11]=8'he2;
+        sbox_grid[3][12]=8'heb; sbox_grid[3][13]=8'h27; sbox_grid[3][14]=8'hb2; sbox_grid[3][15]=8'h75;
+        // Row 0x4
+        sbox_grid[4][0]=8'h09; sbox_grid[4][1]=8'h83; sbox_grid[4][2]=8'h2c; sbox_grid[4][3]=8'h1a;
+        sbox_grid[4][4]=8'h1b; sbox_grid[4][5]=8'h6e; sbox_grid[4][6]=8'h5a; sbox_grid[4][7]=8'ha0;
+        sbox_grid[4][8]=8'h52; sbox_grid[4][9]=8'h3b; sbox_grid[4][10]=8'hd6; sbox_grid[4][11]=8'hb3;
+        sbox_grid[4][12]=8'h29; sbox_grid[4][13]=8'he3; sbox_grid[4][14]=8'h2f; sbox_grid[4][15]=8'h84;
+        // Row 0x5
+        sbox_grid[5][0]=8'h53; sbox_grid[5][1]=8'hd1; sbox_grid[5][2]=8'h00; sbox_grid[5][3]=8'hed;
+        sbox_grid[5][4]=8'h20; sbox_grid[5][5]=8'hfc; sbox_grid[5][6]=8'hb1; sbox_grid[5][7]=8'h5b;
+        sbox_grid[5][8]=8'h6a; sbox_grid[5][9]=8'hcb; sbox_grid[5][10]=8'hbe; sbox_grid[5][11]=8'h39;
+        sbox_grid[5][12]=8'h4a; sbox_grid[5][13]=8'h4c; sbox_grid[5][14]=8'h58; sbox_grid[5][15]=8'hcf;
+        // Row 0x6
+        sbox_grid[6][0]=8'hd0; sbox_grid[6][1]=8'hef; sbox_grid[6][2]=8'haa; sbox_grid[6][3]=8'hfb;
+        sbox_grid[6][4]=8'h43; sbox_grid[6][5]=8'h4d; sbox_grid[6][6]=8'h33; sbox_grid[6][7]=8'h85;
+        sbox_grid[6][8]=8'h45; sbox_grid[6][9]=8'hf9; sbox_grid[6][10]=8'h02; sbox_grid[6][11]=8'h7f;
+        sbox_grid[6][12]=8'h50; sbox_grid[6][13]=8'h3c; sbox_grid[6][14]=8'h9f; sbox_grid[6][15]=8'ha8;
+        // Row 0x7
+        sbox_grid[7][0]=8'h51; sbox_grid[7][1]=8'ha3; sbox_grid[7][2]=8'h40; sbox_grid[7][3]=8'h8f;
+        sbox_grid[7][4]=8'h92; sbox_grid[7][5]=8'h9d; sbox_grid[7][6]=8'h38; sbox_grid[7][7]=8'hf5;
+        sbox_grid[7][8]=8'hbc; sbox_grid[7][9]=8'hb6; sbox_grid[7][10]=8'hda; sbox_grid[7][11]=8'h21;
+        sbox_grid[7][12]=8'h10; sbox_grid[7][13]=8'hff; sbox_grid[7][14]=8'hf3; sbox_grid[7][15]=8'hd2;
+        // Row 0x8
+        sbox_grid[8][0]=8'hcd; sbox_grid[8][1]=8'h0c; sbox_grid[8][2]=8'h13; sbox_grid[8][3]=8'hec;
+        sbox_grid[8][4]=8'h5f; sbox_grid[8][5]=8'h97; sbox_grid[8][6]=8'h44; sbox_grid[8][7]=8'h17;
+        sbox_grid[8][8]=8'hc4; sbox_grid[8][9]=8'ha7; sbox_grid[8][10]=8'h7e; sbox_grid[8][11]=8'h3d;
+        sbox_grid[8][12]=8'h64; sbox_grid[8][13]=8'h5d; sbox_grid[8][14]=8'h19; sbox_grid[8][15]=8'h73;
+        // Row 0x9
+        sbox_grid[9][0]=8'h60; sbox_grid[9][1]=8'h81; sbox_grid[9][2]=8'h4f; sbox_grid[9][3]=8'hdc;
+        sbox_grid[9][4]=8'h22; sbox_grid[9][5]=8'h2a; sbox_grid[9][6]=8'h90; sbox_grid[9][7]=8'h88;
+        sbox_grid[9][8]=8'h46; sbox_grid[9][9]=8'hee; sbox_grid[9][10]=8'hb8; sbox_grid[9][11]=8'h14;
+        sbox_grid[9][12]=8'hde; sbox_grid[9][13]=8'h5e; sbox_grid[9][14]=8'h0b; sbox_grid[9][15]=8'hdb;
+        // Row 0xA
+        sbox_grid[10][0]=8'he0; sbox_grid[10][1]=8'h32; sbox_grid[10][2]=8'h3a; sbox_grid[10][3]=8'h0a;
+        sbox_grid[10][4]=8'h49; sbox_grid[10][5]=8'h06; sbox_grid[10][6]=8'h24; sbox_grid[10][7]=8'h5c;
+        sbox_grid[10][8]=8'hc2; sbox_grid[10][9]=8'hd3; sbox_grid[10][10]=8'hac; sbox_grid[10][11]=8'h62;
+        sbox_grid[10][12]=8'h91; sbox_grid[10][13]=8'h95; sbox_grid[10][14]=8'he4; sbox_grid[10][15]=8'h79;
+        // Row 0xB
+        sbox_grid[11][0]=8'he7; sbox_grid[11][1]=8'hc8; sbox_grid[11][2]=8'h37; sbox_grid[11][3]=8'h6d;
+        sbox_grid[11][4]=8'h8d; sbox_grid[11][5]=8'hd5; sbox_grid[11][6]=8'h4e; sbox_grid[11][7]=8'ha9;
+        sbox_grid[11][8]=8'h6c; sbox_grid[11][9]=8'h56; sbox_grid[11][10]=8'hf4; sbox_grid[11][11]=8'hea;
+        sbox_grid[11][12]=8'h65; sbox_grid[11][13]=8'h7a; sbox_grid[11][14]=8'hae; sbox_grid[11][15]=8'h08;
+        // Row 0xC
+        sbox_grid[12][0]=8'hba; sbox_grid[12][1]=8'h78; sbox_grid[12][2]=8'h25; sbox_grid[12][3]=8'h2e;
+        sbox_grid[12][4]=8'h1c; sbox_grid[12][5]=8'ha6; sbox_grid[12][6]=8'hb4; sbox_grid[12][7]=8'hc6;
+        sbox_grid[12][8]=8'he8; sbox_grid[12][9]=8'hdd; sbox_grid[12][10]=8'h74; sbox_grid[12][11]=8'h1f;
+        sbox_grid[12][12]=8'h4b; sbox_grid[12][13]=8'hbd; sbox_grid[12][14]=8'h8b; sbox_grid[12][15]=8'h8a;
+        // Row 0xD
+        sbox_grid[13][0]=8'h70; sbox_grid[13][1]=8'h3e; sbox_grid[13][2]=8'hb5; sbox_grid[13][3]=8'h66;
+        sbox_grid[13][4]=8'h48; sbox_grid[13][5]=8'h03; sbox_grid[13][6]=8'hf6; sbox_grid[13][7]=8'h0e;
+        sbox_grid[13][8]=8'h61; sbox_grid[13][9]=8'h35; sbox_grid[13][10]=8'h57; sbox_grid[13][11]=8'hb9;
+        sbox_grid[13][12]=8'h86; sbox_grid[13][13]=8'hc1; sbox_grid[13][14]=8'h1d; sbox_grid[13][15]=8'h9e;
+        // Row 0xE
+        sbox_grid[14][0]=8'he1; sbox_grid[14][1]=8'hf8; sbox_grid[14][2]=8'h98; sbox_grid[14][3]=8'h11;
+        sbox_grid[14][4]=8'h69; sbox_grid[14][5]=8'hd9; sbox_grid[14][6]=8'h8e; sbox_grid[14][7]=8'h94;
+        sbox_grid[14][8]=8'h9b; sbox_grid[14][9]=8'h1e; sbox_grid[14][10]=8'h87; sbox_grid[14][11]=8'he9;
+        sbox_grid[14][12]=8'hce; sbox_grid[14][13]=8'h55; sbox_grid[14][14]=8'h28; sbox_grid[14][15]=8'hdf;
+        // Row 0xF
+        sbox_grid[15][0]=8'h8c; sbox_grid[15][1]=8'ha1; sbox_grid[15][2]=8'h89; sbox_grid[15][3]=8'h0d;
+        sbox_grid[15][4]=8'hbf; sbox_grid[15][5]=8'he6; sbox_grid[15][6]=8'h42; sbox_grid[15][7]=8'h68;
+        sbox_grid[15][8]=8'h41; sbox_grid[15][9]=8'h99; sbox_grid[15][10]=8'h2d; sbox_grid[15][11]=8'h0f;
+        sbox_grid[15][12]=8'hb0; sbox_grid[15][13]=8'h54; sbox_grid[15][14]=8'hbb; sbox_grid[15][15]=8'h16;
+    end
+ 
+    always @(*) begin
+        out_byte = sbox_grid[row][col];
+    end
+ 
+endmodule
+// multiply.v
+// -----------------------------------------------------------------------
+// Galois Field GF(2^8) multiplication, used by MixColumns.
+// AES MixColumns only ever needs to multiply a byte by 1, 2, or 3.
+//
+//  - Multiply by 1 : output = input (no change)
+//  - Multiply by 2 (xtime) : left shift by 1, and if the original MSB was 1,
+//                             XOR the shifted result with 0x1b (irreducible
+//                             polynomial reduction)
+//  - Multiply by 3 : (multiply by 2) XOR (original input)
+//
+// mult_sel selects which operation to perform:
+//    2'b00 -> multiply by 1
+//    2'b01 -> multiply by 2
+//    2'b10 -> multiply by 3
+// -----------------------------------------------------------------------
+ 
+module multiply (
+    input  wire [7:0] in_byte,
+    input  wire [1:0] mult_sel,
+    output reg  [7:0] out_byte
+);
+ 
+    // xtime = multiply by 2 in GF(2^8)
+    wire [7:0] xtime_result;
+    assign xtime_result = in_byte[7] ? ((in_byte << 1) ^ 8'h1b)
+                                      : (in_byte << 1);
+ 
+    always @(*) begin
+        case (mult_sel)
+            2'b00:   out_byte = in_byte;                    // multiply by 1
+            2'b01:   out_byte = xtime_result;                // multiply by 2
+            2'b10:   out_byte = xtime_result ^ in_byte;       // multiply by 3
+            default: out_byte = 8'h00;
+        endcase
+    end
+ 
+endmodule
+// shift_rows.v
+// -----------------------------------------------------------------------
+// AES ShiftRows step.
+// The AES state is a 4x4 byte matrix. Each ROW of that matrix is cyclically
+// shifted left by an amount equal to the row's index (row0 -> no shift,
+// row1 -> shift 1, row2 -> shift 2, row3 -> shift 3).
+//
+// Here a "row" is represented as one 32-bit wire made up of 4 bytes:
+//   row_in = {byte0, byte1, byte2, byte3}   (byte0 = most significant byte)
+//
+// row_sel (2-bit parameter) tells the module how many bytes to cyclically
+// shift left.
+// -----------------------------------------------------------------------
+ 
+module shift_rows (
+    input  wire [31:0] row_in,
+    input  wire [1:0]  row_sel,   // 0,1,2,3 -> number of bytes to shift left
+    output reg  [31:0] row_out
+);
+ 
+    always @(*) begin
+        case (row_sel)
+            2'd0: row_out = row_in;                                   // no shift
+            2'd1: row_out = {row_in[23:0], row_in[31:24]};            // shift left 1 byte
+            2'd2: row_out = {row_in[15:0], row_in[31:16]};            // shift left 2 bytes
+            2'd3: row_out = {row_in[7:0],  row_in[31:8]};             // shift left 3 bytes
+            default: row_out = row_in;
+        endcase
+    end
+ 
+endmodule
+// mix_columns.v
+// -----------------------------------------------------------------------
+// AES MixColumns step.
+// Takes one COLUMN of the AES state (4 bytes packed into a 32-bit wire)
+// and multiplies it by the fixed AES matrix:
+//
+//      [02 03 01 01]   [b0]
+//      [01 02 03 01] x [b1]
+//      [01 01 02 03]   [b2]
+//      [03 01 01 02]   [b3]
+//
+// col_in = {b0, b1, b2, b3}  (b0 = most significant byte)
+//
+// Built entirely by wiring together instances of the "multiply" module
+// (multiply by 1/2/3) plus XORs.
+// -----------------------------------------------------------------------
+ 
+module mix_columns (
+    input  wire [31:0] col_in,
+    output wire [31:0] col_out
+);
+ 
+    wire [7:0] b0 = col_in[31:24];
+    wire [7:0] b1 = col_in[23:16];
+    wire [7:0] b2 = col_in[15:8];
+    wire [7:0] b3 = col_in[7:0];
+ 
+    // Products needed: 2*b0, 3*b0, 2*b1, 3*b1, 2*b2, 3*b2, 2*b3, 3*b3
+    wire [7:0] b0_x2, b0_x3;
+    wire [7:0] b1_x2, b1_x3;
+    wire [7:0] b2_x2, b2_x3;
+    wire [7:0] b3_x2, b3_x3;
+ 
+    multiply u_b0_x2 (.in_byte(b0), .mult_sel(2'b01), .out_byte(b0_x2));
+    multiply u_b0_x3 (.in_byte(b0), .mult_sel(2'b10), .out_byte(b0_x3));
+ 
+    multiply u_b1_x2 (.in_byte(b1), .mult_sel(2'b01), .out_byte(b1_x2));
+    multiply u_b1_x3 (.in_byte(b1), .mult_sel(2'b10), .out_byte(b1_x3));
+ 
+    multiply u_b2_x2 (.in_byte(b2), .mult_sel(2'b01), .out_byte(b2_x2));
+    multiply u_b2_x3 (.in_byte(b2), .mult_sel(2'b10), .out_byte(b2_x3));
+ 
+    multiply u_b3_x2 (.in_byte(b3), .mult_sel(2'b01), .out_byte(b3_x2));
+    multiply u_b3_x3 (.in_byte(b3), .mult_sel(2'b10), .out_byte(b3_x3));
+ 
+    // o0 = 2*b0 ^ 3*b1 ^ 1*b2 ^ 1*b3
+    // o1 = 1*b0 ^ 2*b1 ^ 3*b2 ^ 1*b3
+    // o2 = 1*b0 ^ 1*b1 ^ 2*b2 ^ 3*b3
+    // o3 = 3*b0 ^ 1*b1 ^ 1*b2 ^ 2*b3
+    wire [7:0] o0 = b0_x2 ^ b1_x3 ^ b2    ^ b3;
+    wire [7:0] o1 = b0    ^ b1_x2 ^ b2_x3 ^ b3;
+    wire [7:0] o2 = b0    ^ b1    ^ b2_x2 ^ b3_x3;
+    wire [7:0] o3 = b0_x3 ^ b1    ^ b2    ^ b3_x2;
+ 
+    assign col_out = {o0, o1, o2, o3};
+ 
+endmodule
+// add_round_key.v
+// -----------------------------------------------------------------------
+// AES AddRoundKey step.
+// Simple bitwise XOR of the 128-bit state with the 128-bit round key.
+// -----------------------------------------------------------------------
+ 
+module add_round_key (
+    input  wire [127:0] state_in,
+    input  wire [127:0] round_key,
+    output wire [127:0] state_out
+);
+ 
+    assign state_out = state_in ^ round_key;
+ 
+endmodule
+// key_expansion.v
+// -----------------------------------------------------------------------
+// AES-256 Key Expansion.
+//   Nk = 8  (256-bit key = 8 x 32-bit words)
+//   Nr = 14 (number of rounds)
+//   Total words needed = 4 * (Nr + 1) = 60
+//   Total round keys   = Nr + 1 = 15  (round key 0 used before round 1)
+//
+// Output is a single flat bus containing all 15 round keys, 128 bits each:
+//   round_keys_flat[1919:1792] = round key 0
+//   round_keys_flat[1791:1664] = round key 1
+//   ...
+//   round_keys_flat[127:0]     = round key 14
+// -----------------------------------------------------------------------
+ 
+module key_expansion (
+    input  wire [255:0]  cipher_key,       // 256-bit AES key
+    output wire [1919:0] round_keys_flat   // 15 round keys x 128 bits
+);
+ 
+    localparam NK = 8;
+    localparam NR = 14;
+    localparam TOTAL_WORDS = 4 * (NR + 1); // 60 words
+ 
+    reg [31:0] w [0:TOTAL_WORDS-1];
+    reg [7:0]  sbox_tbl [0:255];
+    reg [7:0]  rcon [1:14];
+ 
+    integer i;
+    reg [31:0] temp;
+    reg [31:0] rotated;
+    reg [31:0] subbed;
+ 
+    // ---------------------------------------------------------------
+    // Flat AES S-box table (same standard 256-entry AES S-box)
+    // ---------------------------------------------------------------
+    initial begin
+        sbox_tbl[8'h00]=8'h63; sbox_tbl[8'h01]=8'h7c; sbox_tbl[8'h02]=8'h77; sbox_tbl[8'h03]=8'h7b;
+        sbox_tbl[8'h04]=8'hf2; sbox_tbl[8'h05]=8'h6b; sbox_tbl[8'h06]=8'h6f; sbox_tbl[8'h07]=8'hc5;
+        sbox_tbl[8'h08]=8'h30; sbox_tbl[8'h09]=8'h01; sbox_tbl[8'h0a]=8'h67; sbox_tbl[8'h0b]=8'h2b;
+        sbox_tbl[8'h0c]=8'hfe; sbox_tbl[8'h0d]=8'hd7; sbox_tbl[8'h0e]=8'hab; sbox_tbl[8'h0f]=8'h76;
+        sbox_tbl[8'h10]=8'hca; sbox_tbl[8'h11]=8'h82; sbox_tbl[8'h12]=8'hc9; sbox_tbl[8'h13]=8'h7d;
+        sbox_tbl[8'h14]=8'hfa; sbox_tbl[8'h15]=8'h59; sbox_tbl[8'h16]=8'h47; sbox_tbl[8'h17]=8'hf0;
+        sbox_tbl[8'h18]=8'had; sbox_tbl[8'h19]=8'hd4; sbox_tbl[8'h1a]=8'ha2; sbox_tbl[8'h1b]=8'haf;
+        sbox_tbl[8'h1c]=8'h9c; sbox_tbl[8'h1d]=8'ha4; sbox_tbl[8'h1e]=8'h72; sbox_tbl[8'h1f]=8'hc0;
+        sbox_tbl[8'h20]=8'hb7; sbox_tbl[8'h21]=8'hfd; sbox_tbl[8'h22]=8'h93; sbox_tbl[8'h23]=8'h26;
+        sbox_tbl[8'h24]=8'h36; sbox_tbl[8'h25]=8'h3f; sbox_tbl[8'h26]=8'hf7; sbox_tbl[8'h27]=8'hcc;
+        sbox_tbl[8'h28]=8'h34; sbox_tbl[8'h29]=8'ha5; sbox_tbl[8'h2a]=8'he5; sbox_tbl[8'h2b]=8'hf1;
+        sbox_tbl[8'h2c]=8'h71; sbox_tbl[8'h2d]=8'hd8; sbox_tbl[8'h2e]=8'h31; sbox_tbl[8'h2f]=8'h15;
+        sbox_tbl[8'h30]=8'h04; sbox_tbl[8'h31]=8'hc7; sbox_tbl[8'h32]=8'h23; sbox_tbl[8'h33]=8'hc3;
+        sbox_tbl[8'h34]=8'h18; sbox_tbl[8'h35]=8'h96; sbox_tbl[8'h36]=8'h05; sbox_tbl[8'h37]=8'h9a;
+        sbox_tbl[8'h38]=8'h07; sbox_tbl[8'h39]=8'h12; sbox_tbl[8'h3a]=8'h80; sbox_tbl[8'h3b]=8'he2;
+        sbox_tbl[8'h3c]=8'heb; sbox_tbl[8'h3d]=8'h27; sbox_tbl[8'h3e]=8'hb2; sbox_tbl[8'h3f]=8'h75;
+        sbox_tbl[8'h40]=8'h09; sbox_tbl[8'h41]=8'h83; sbox_tbl[8'h42]=8'h2c; sbox_tbl[8'h43]=8'h1a;
+        sbox_tbl[8'h44]=8'h1b; sbox_tbl[8'h45]=8'h6e; sbox_tbl[8'h46]=8'h5a; sbox_tbl[8'h47]=8'ha0;
+        sbox_tbl[8'h48]=8'h52; sbox_tbl[8'h49]=8'h3b; sbox_tbl[8'h4a]=8'hd6; sbox_tbl[8'h4b]=8'hb3;
+        sbox_tbl[8'h4c]=8'h29; sbox_tbl[8'h4d]=8'he3; sbox_tbl[8'h4e]=8'h2f; sbox_tbl[8'h4f]=8'h84;
+        sbox_tbl[8'h50]=8'h53; sbox_tbl[8'h51]=8'hd1; sbox_tbl[8'h52]=8'h00; sbox_tbl[8'h53]=8'hed;
+        sbox_tbl[8'h54]=8'h20; sbox_tbl[8'h55]=8'hfc; sbox_tbl[8'h56]=8'hb1; sbox_tbl[8'h57]=8'h5b;
+        sbox_tbl[8'h58]=8'h6a; sbox_tbl[8'h59]=8'hcb; sbox_tbl[8'h5a]=8'hbe; sbox_tbl[8'h5b]=8'h39;
+        sbox_tbl[8'h5c]=8'h4a; sbox_tbl[8'h5d]=8'h4c; sbox_tbl[8'h5e]=8'h58; sbox_tbl[8'h5f]=8'hcf;
+        sbox_tbl[8'h60]=8'hd0; sbox_tbl[8'h61]=8'hef; sbox_tbl[8'h62]=8'haa; sbox_tbl[8'h63]=8'hfb;
+        sbox_tbl[8'h64]=8'h43; sbox_tbl[8'h65]=8'h4d; sbox_tbl[8'h66]=8'h33; sbox_tbl[8'h67]=8'h85;
+        sbox_tbl[8'h68]=8'h45; sbox_tbl[8'h69]=8'hf9; sbox_tbl[8'h6a]=8'h02; sbox_tbl[8'h6b]=8'h7f;
+        sbox_tbl[8'h6c]=8'h50; sbox_tbl[8'h6d]=8'h3c; sbox_tbl[8'h6e]=8'h9f; sbox_tbl[8'h6f]=8'ha8;
+        sbox_tbl[8'h70]=8'h51; sbox_tbl[8'h71]=8'ha3; sbox_tbl[8'h72]=8'h40; sbox_tbl[8'h73]=8'h8f;
+        sbox_tbl[8'h74]=8'h92; sbox_tbl[8'h75]=8'h9d; sbox_tbl[8'h76]=8'h38; sbox_tbl[8'h77]=8'hf5;
+        sbox_tbl[8'h78]=8'hbc; sbox_tbl[8'h79]=8'hb6; sbox_tbl[8'h7a]=8'hda; sbox_tbl[8'h7b]=8'h21;
+        sbox_tbl[8'h7c]=8'h10; sbox_tbl[8'h7d]=8'hff; sbox_tbl[8'h7e]=8'hf3; sbox_tbl[8'h7f]=8'hd2;
+        sbox_tbl[8'h80]=8'hcd; sbox_tbl[8'h81]=8'h0c; sbox_tbl[8'h82]=8'h13; sbox_tbl[8'h83]=8'hec;
+        sbox_tbl[8'h84]=8'h5f; sbox_tbl[8'h85]=8'h97; sbox_tbl[8'h86]=8'h44; sbox_tbl[8'h87]=8'h17;
+        sbox_tbl[8'h88]=8'hc4; sbox_tbl[8'h89]=8'ha7; sbox_tbl[8'h8a]=8'h7e; sbox_tbl[8'h8b]=8'h3d;
+        sbox_tbl[8'h8c]=8'h64; sbox_tbl[8'h8d]=8'h5d; sbox_tbl[8'h8e]=8'h19; sbox_tbl[8'h8f]=8'h73;
+        sbox_tbl[8'h90]=8'h60; sbox_tbl[8'h91]=8'h81; sbox_tbl[8'h92]=8'h4f; sbox_tbl[8'h93]=8'hdc;
+        sbox_tbl[8'h94]=8'h22; sbox_tbl[8'h95]=8'h2a; sbox_tbl[8'h96]=8'h90; sbox_tbl[8'h97]=8'h88;
+        sbox_tbl[8'h98]=8'h46; sbox_tbl[8'h99]=8'hee; sbox_tbl[8'h9a]=8'hb8; sbox_tbl[8'h9b]=8'h14;
+        sbox_tbl[8'h9c]=8'hde; sbox_tbl[8'h9d]=8'h5e; sbox_tbl[8'h9e]=8'h0b; sbox_tbl[8'h9f]=8'hdb;
+        sbox_tbl[8'ha0]=8'he0; sbox_tbl[8'ha1]=8'h32; sbox_tbl[8'ha2]=8'h3a; sbox_tbl[8'ha3]=8'h0a;
+        sbox_tbl[8'ha4]=8'h49; sbox_tbl[8'ha5]=8'h06; sbox_tbl[8'ha6]=8'h24; sbox_tbl[8'ha7]=8'h5c;
+        sbox_tbl[8'ha8]=8'hc2; sbox_tbl[8'ha9]=8'hd3; sbox_tbl[8'haa]=8'hac; sbox_tbl[8'hab]=8'h62;
+        sbox_tbl[8'hac]=8'h91; sbox_tbl[8'had]=8'h95; sbox_tbl[8'hae]=8'he4; sbox_tbl[8'haf]=8'h79;
+        sbox_tbl[8'hb0]=8'he7; sbox_tbl[8'hb1]=8'hc8; sbox_tbl[8'hb2]=8'h37; sbox_tbl[8'hb3]=8'h6d;
+        sbox_tbl[8'hb4]=8'h8d; sbox_tbl[8'hb5]=8'hd5; sbox_tbl[8'hb6]=8'h4e; sbox_tbl[8'hb7]=8'ha9;
+        sbox_tbl[8'hb8]=8'h6c; sbox_tbl[8'hb9]=8'h56; sbox_tbl[8'hba]=8'hf4; sbox_tbl[8'hbb]=8'hea;
+        sbox_tbl[8'hbc]=8'h65; sbox_tbl[8'hbd]=8'h7a; sbox_tbl[8'hbe]=8'hae; sbox_tbl[8'hbf]=8'h08;
+        sbox_tbl[8'hc0]=8'hba; sbox_tbl[8'hc1]=8'h78; sbox_tbl[8'hc2]=8'h25; sbox_tbl[8'hc3]=8'h2e;
+        sbox_tbl[8'hc4]=8'h1c; sbox_tbl[8'hc5]=8'ha6; sbox_tbl[8'hc6]=8'hb4; sbox_tbl[8'hc7]=8'hc6;
+        sbox_tbl[8'hc8]=8'he8; sbox_tbl[8'hc9]=8'hdd; sbox_tbl[8'hca]=8'h74; sbox_tbl[8'hcb]=8'h1f;
+        sbox_tbl[8'hcc]=8'h4b; sbox_tbl[8'hcd]=8'hbd; sbox_tbl[8'hce]=8'h8b; sbox_tbl[8'hcf]=8'h8a;
+        sbox_tbl[8'hd0]=8'h70; sbox_tbl[8'hd1]=8'h3e; sbox_tbl[8'hd2]=8'hb5; sbox_tbl[8'hd3]=8'h66;
+        sbox_tbl[8'hd4]=8'h48; sbox_tbl[8'hd5]=8'h03; sbox_tbl[8'hd6]=8'hf6; sbox_tbl[8'hd7]=8'h0e;
+        sbox_tbl[8'hd8]=8'h61; sbox_tbl[8'hd9]=8'h35; sbox_tbl[8'hda]=8'h57; sbox_tbl[8'hdb]=8'hb9;
+        sbox_tbl[8'hdc]=8'h86; sbox_tbl[8'hdd]=8'hc1; sbox_tbl[8'hde]=8'h1d; sbox_tbl[8'hdf]=8'h9e;
+        sbox_tbl[8'he0]=8'he1; sbox_tbl[8'he1]=8'hf8; sbox_tbl[8'he2]=8'h98; sbox_tbl[8'he3]=8'h11;
+        sbox_tbl[8'he4]=8'h69; sbox_tbl[8'he5]=8'hd9; sbox_tbl[8'he6]=8'h8e; sbox_tbl[8'he7]=8'h94;
+        sbox_tbl[8'he8]=8'h9b; sbox_tbl[8'he9]=8'h1e; sbox_tbl[8'hea]=8'h87; sbox_tbl[8'heb]=8'he9;
+        sbox_tbl[8'hec]=8'hce; sbox_tbl[8'hed]=8'h55; sbox_tbl[8'hee]=8'h28; sbox_tbl[8'hef]=8'hdf;
+        sbox_tbl[8'hf0]=8'h8c; sbox_tbl[8'hf1]=8'ha1; sbox_tbl[8'hf2]=8'h89; sbox_tbl[8'hf3]=8'h0d;
+        sbox_tbl[8'hf4]=8'hbf; sbox_tbl[8'hf5]=8'he6; sbox_tbl[8'hf6]=8'h42; sbox_tbl[8'hf7]=8'h68;
+        sbox_tbl[8'hf8]=8'h41; sbox_tbl[8'hf9]=8'h99; sbox_tbl[8'hfa]=8'h2d; sbox_tbl[8'hfb]=8'h0f;
+        sbox_tbl[8'hfc]=8'hb0; sbox_tbl[8'hfd]=8'h54; sbox_tbl[8'hfe]=8'hbb; sbox_tbl[8'hff]=8'h16;
+ 
+        // Standard AES Rcon values (only first byte of each Rcon word; rest = 0)
+        rcon[1]=8'h01; rcon[2]=8'h02; rcon[3]=8'h04; rcon[4]=8'h08;
+        rcon[5]=8'h10; rcon[6]=8'h20; rcon[7]=8'h40; rcon[8]=8'h80;
+        rcon[9]=8'h1b; rcon[10]=8'h36; rcon[11]=8'h6c; rcon[12]=8'hd8;
+        rcon[13]=8'hab; rcon[14]=8'h4d;
+    end
+ 
+    // ---------------------------------------------------------------
+    // Key expansion algorithm (combinational, recomputed whenever
+    // cipher_key changes)
+    // ---------------------------------------------------------------
+    always @(*) begin
+        // First Nk words = the cipher key itself
+        w[0] = cipher_key[255:224];
+        w[1] = cipher_key[223:192];
+        w[2] = cipher_key[191:160];
+        w[3] = cipher_key[159:128];
+        w[4] = cipher_key[127:96];
+        w[5] = cipher_key[95:64];
+        w[6] = cipher_key[63:32];
+        w[7] = cipher_key[31:0];
+ 
+        for (i = NK; i < TOTAL_WORDS; i = i + 1) begin
+            temp = w[i-1];
+ 
+            if (i % NK == 0) begin
+                // RotWord: rotate left by one byte
+                rotated = {temp[23:0], temp[31:24]};
+                // SubWord: apply S-box to every byte
+                subbed  = { sbox_tbl[rotated[31:24]], sbox_tbl[rotated[23:16]],
+                            sbox_tbl[rotated[15:8]],  sbox_tbl[rotated[7:0]] };
+                temp = subbed ^ {rcon[i/NK], 24'h000000};
+            end
+            else if (i % NK == 4) begin
+                // AES-256 extra SubWord step
+                temp = { sbox_tbl[temp[31:24]], sbox_tbl[temp[23:16]],
+                         sbox_tbl[temp[15:8]],  sbox_tbl[temp[7:0]] };
+            end
+ 
+            w[i] = w[i-NK] ^ temp;
+        end
+    end
+ 
+    // ---------------------------------------------------------------
+    // Pack the 60 words into 15 round keys (128 bits each)
+    // ---------------------------------------------------------------
+    genvar r;
+    generate
+        for (r = 0; r <= NR; r = r + 1) begin : PACK_ROUND_KEYS
+            assign round_keys_flat[ (1919 - r*128) -: 128 ] =
+                   { w[r*4], w[r*4+1], w[r*4+2], w[r*4+3] };
+        end
+    endgenerate
+ 
+endmodule
+// aes_round.v
+// -----------------------------------------------------------------------
+// One AES round = SubBytes -> ShiftRows -> MixColumns -> AddRoundKey
+//
+// State convention (matches FIPS-197):
+//   128-bit state = 4 columns of 4 bytes each, column-major.
+//   state_in[127:96] = column 0 (bytes row0,row1,row2,row3 top->bottom)
+//   state_in[95:64]  = column 1
+//   state_in[63:32]  = column 2
+//   state_in[31:0]   = column 3
+//
+// skip_mixcolumns = 1 for the FINAL round (round 14), which does NOT
+// perform MixColumns.
+// -----------------------------------------------------------------------
+ 
+module aes_round (
+    input  wire [127:0] state_in,
+    input  wire [127:0] round_key,
+    input  wire         skip_mixcolumns,
+    output wire [127:0] state_out
+);
+ 
+    // -----------------------------------------------------------
+    // Step 1: SubBytes -- apply S-box to all 16 bytes independently
+    // -----------------------------------------------------------
+    wire [127:0] after_subbytes;
+    genvar gi;
+    generate
+        for (gi = 0; gi < 16; gi = gi + 1) begin : SUBBYTES
+            sbox u_sbox (
+                .in_byte (state_in[127 - gi*8 -: 8]),
+                .out_byte(after_subbytes[127 - gi*8 -: 8])
+            );
+        end
+    endgenerate
+ 
+    // -----------------------------------------------------------
+    // Step 2: ShiftRows -- regroup bytes into rows, shift, regroup back
+    //   byte index i (0..15): column = i/4, row = i%4
+    //   row r (across the 4 columns) = bytes {r, r+4, r+8, r+12}
+    // -----------------------------------------------------------
+    wire [7:0] sb [0:15];
+    generate
+        for (gi = 0; gi < 16; gi = gi + 1) begin : SLICE_BYTES
+            assign sb[gi] = after_subbytes[127 - gi*8 -: 8];
+        end
+    endgenerate
+ 
+    wire [31:0] row0_in = {sb[0],  sb[4],  sb[8],  sb[12]};
+    wire [31:0] row1_in = {sb[1],  sb[5],  sb[9],  sb[13]};
+    wire [31:0] row2_in = {sb[2],  sb[6],  sb[10], sb[14]};
+    wire [31:0] row3_in = {sb[3],  sb[7],  sb[11], sb[15]};
+ 
+    wire [31:0] row0_out, row1_out, row2_out, row3_out;
+ 
+    shift_rows u_row0 (.row_in(row0_in), .row_sel(2'd0), .row_out(row0_out));
+    shift_rows u_row1 (.row_in(row1_in), .row_sel(2'd1), .row_out(row1_out));
+    shift_rows u_row2 (.row_in(row2_in), .row_sel(2'd2), .row_out(row2_out));
+    shift_rows u_row3 (.row_in(row3_in), .row_sel(2'd3), .row_out(row3_out));
+ 
+    // Regroup rows back into 4 columns (32-bit each)
+    wire [31:0] col0_pre_mix = {row0_out[31:24], row1_out[31:24], row2_out[31:24], row3_out[31:24]};
+    wire [31:0] col1_pre_mix = {row0_out[23:16], row1_out[23:16], row2_out[23:16], row3_out[23:16]};
+    wire [31:0] col2_pre_mix = {row0_out[15:8],  row1_out[15:8],  row2_out[15:8],  row3_out[15:8]};
+    wire [31:0] col3_pre_mix = {row0_out[7:0],   row1_out[7:0],   row2_out[7:0],   row3_out[7:0]};
+ 
+    // -----------------------------------------------------------
+    // Step 3: MixColumns (skipped on final round)
+    // -----------------------------------------------------------
+    wire [31:0] col0_mixed, col1_mixed, col2_mixed, col3_mixed;
+ 
+    mix_columns u_mc0 (.col_in(col0_pre_mix), .col_out(col0_mixed));
+    mix_columns u_mc1 (.col_in(col1_pre_mix), .col_out(col1_mixed));
+    mix_columns u_mc2 (.col_in(col2_pre_mix), .col_out(col2_mixed));
+    mix_columns u_mc3 (.col_in(col3_pre_mix), .col_out(col3_mixed));
+ 
+    wire [31:0] col0_final = skip_mixcolumns ? col0_pre_mix : col0_mixed;
+    wire [31:0] col1_final = skip_mixcolumns ? col1_pre_mix : col1_mixed;
+    wire [31:0] col2_final = skip_mixcolumns ? col2_pre_mix : col2_mixed;
+    wire [31:0] col3_final = skip_mixcolumns ? col3_pre_mix : col3_mixed;
+ 
+    wire [127:0] after_mixcolumns = {col0_final, col1_final, col2_final, col3_final};
+ 
+    // -----------------------------------------------------------
+    // Step 4: AddRoundKey
+    // -----------------------------------------------------------
+    add_round_key u_ark (
+        .state_in (after_mixcolumns),
+        .round_key(round_key),
+        .state_out(state_out)
+    );
+ 
+endmodule
+// aes_top.v
+// -----------------------------------------------------------------------
+// AES-256 top level encryption module.
+//   - 128-bit plaintext block
+//   - 256-bit cipher key
+//   - 14 rounds (Nr = 14 for AES-256), implemented as an FSM that LOOPS
+//     through one shared aes_round instance 14 times (not fully unrolled).
+//
+// Usage:
+//   1. Apply plaintext & cipher_key while start = 1 for one clock cycle
+//   2. Wait for 'done' to go high
+//   3. Read ciphertext
+// -----------------------------------------------------------------------
+ 
+module aes_top (
+    input  wire         clk,
+    input  wire         rst,          // synchronous, active-high reset
+    input  wire         start,        // pulse high for 1 cycle to begin
+    input  wire [127:0] plaintext,
+    input  wire [255:0] cipher_key,
+    output reg  [127:0] ciphertext,
+    output reg          done
+);
+ 
+    localparam NR = 14; // number of AES-256 rounds
+ 
+    // FSM states
+    localparam S_IDLE  = 2'd0;
+    localparam S_ROUND = 2'd1;
+    localparam S_DONE  = 2'd2;
+ 
+    reg [1:0] state_fsm;
+    reg [127:0] state_reg;
+    reg [4:0]   round_cnt;   // counts 1 .. 14
+ 
+    // ---------------------------------------------------------------
+    // Key expansion (computes all 15 round keys from the cipher key)
+    // ---------------------------------------------------------------
+    wire [1919:0] round_keys_flat;
+    key_expansion u_key_expansion (
+        .cipher_key     (cipher_key),
+        .round_keys_flat(round_keys_flat)
+    );
+ 
+    // Helper function-like access: round key r (0..14)
+    function [127:0] get_round_key;
+        input [4:0] r;
+        begin
+            get_round_key = round_keys_flat[(1919 - r*128) -: 128];
+        end
+    endfunction
+ 
+    // ---------------------------------------------------------------
+    // Single shared aes_round instance, reused every clock cycle
+    // ---------------------------------------------------------------
+    reg  [127:0] round_state_in;
+    reg  [127:0] round_key_in;
+    reg          skip_mix_in;
+    wire [127:0] round_state_out;
+ 
+    aes_round u_aes_round (
+        .state_in       (round_state_in),
+        .round_key      (round_key_in),
+        .skip_mixcolumns(skip_mix_in),
+        .state_out      (round_state_out)
+    );
+ 
+    // ---------------------------------------------------------------
+    // Combinational drive of the shared round module based on FSM state
+    // ---------------------------------------------------------------
+    always @(*) begin
+        round_state_in = state_reg;
+        round_key_in   = get_round_key(round_cnt);
+        skip_mix_in    = (round_cnt == NR) ? 1'b1 : 1'b0; // final round skips MixColumns
+    end
+ 
+    // ---------------------------------------------------------------
+    // Main FSM: loops through rounds 1 .. 14 (14 "loops" through aes_round)
+    // ---------------------------------------------------------------
+    always @(posedge clk) begin
+        if (rst) begin
+            state_fsm  <= S_IDLE;
+            state_reg  <= 128'd0;
+            round_cnt  <= 5'd0;
+            done       <= 1'b0;
+            ciphertext <= 128'd0;
+        end
+        else begin
+            case (state_fsm)
+ 
+                S_IDLE: begin
+                    done <= 1'b0;
+                    if (start) begin
+                        // Initial AddRoundKey (round 0), before round loop begins
+                        state_reg <= plaintext ^ get_round_key(5'd0);
+                        round_cnt <= 5'd1;
+                        state_fsm <= S_ROUND;
+                    end
+                end
+ 
+                S_ROUND: begin
+                    // Apply one round using the currently selected round key
+                    state_reg <= round_state_out;
+ 
+                    if (round_cnt == NR) begin
+                        // Just completed the final (14th) round
+                        state_fsm <= S_DONE;
+                    end
+                    else begin
+                        round_cnt <= round_cnt + 1'b1;
+                    end
+                end
+ 
+                S_DONE: begin
+                    ciphertext <= state_reg;
+                    done       <= 1'b1;
+                    state_fsm  <= S_IDLE;
+                end
+ 
+                default: state_fsm <= S_IDLE;
+            endcase
+        end
+    end
+ 
+endmodule
 
